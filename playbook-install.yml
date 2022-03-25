@@ -50,26 +50,92 @@
   ##################################
   ## install loomio
   ##################################
+  - name: Check for git working tree
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    stat:
+      path: /home/pacs/{{pac}}/users/{{user}}/loomio
+    register: workingtree
+  - name: get loomio repo
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    git:
+      repo: https://github.com/loomio/loomio.git
+      version: "{{loomio_branch}}"
+      dest: /home/pacs/{{pac}}/users/{{user}}/loomio
+    when: not workingtree.stat.exists
 
-  # TODO
+  - name: install ruby packages
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      . ~/.profile
+      gem update --system || exit -1
+      bundle install || exit -1
+    args:
+        executable: /bin/bash
+        chdir: "/home/pacs/{{pac}}/users/{{user}}/loomio"
+
+  - name: install node.js packages
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      . ~/.profile
+      npm install || exit -1
+      npm run build || exit -1
+    args:
+        executable: /bin/bash
+        chdir: "/home/pacs/{{pac}}/users/{{user}}/loomio/vue"
 
   ##################################
   ## configuration
   ##################################
+  - name: copy database config file
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    template: dest="/home/pacs/{{pac}}/users/{{user}}/loomio/config/database.yml" src="templates/database.yml" mode=0600
 
-  # TODO
+  - name: copy production config file
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    template: dest="/home/pacs/{{pac}}/users/{{user}}/loomio/config/production.rb" src="templates/production.rb" mode=0600
 
   ######################
   ## initialise instance
   ######################
+  - name: create secret key
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      . ~/.profile
+      EDITOR=cat rails credentials:edit || exit -1
+    args:
+        executable: /bin/bash
+        chdir: "/home/pacs/{{pac}}/users/{{user}}/loomio"
+        creates: /home/pacs/{{pac}}/users/{{user}}/loomio/config/credentials.yml.enc
 
-  # TODO
+  # TODO: this will fail because of missing postgresql modules: citext, hstore, pg_stat_statements, pgcrypto and plpgsql
+  - name: prepare database
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    shell: |
+      . ~/.profile
+      export RAILS_ENV="production"
+      rake db:schema:load || exit -1
+      rake db:migrate || exit -1
+      touch /home/pacs/{{pac}}/users/{{user}}/.ansible_db_prepared
+    args:
+        executable: /bin/bash
+        chdir: "/home/pacs/{{pac}}/users/{{user}}/loomio"
+        creates: /home/pacs/{{pac}}/users/{{user}}/.ansible_db_prepared
 
   ########################
   ## setup the apache site
   ########################
-
-  # TODO
+  - name: upload htaccess
+    become: yes
+    become_user: "{{pac}}-{{user}}"
+    template: dest="/home/pacs/{{pac}}/users/{{user}}/doms/{{domain}}/htdocs-ssl/.htaccess" src="templates/htaccess"
 
   ####################################
   ## install cron jobs
@@ -78,15 +144,7 @@
   # TODO
 
   ##############################################
-  ## start services via monit
+  ## start services via systemctl
   ##############################################
-  - name: start monit
-    become: yes
-    become_user: "{{pac}}-{{user}}"
-    shell: |
-      /usr/bin/monit -c ".monitrc"
-    args:
-      executable: /bin/bash
-      chdir: "/home/pacs/{{pac}}/users/{{user}}/"
-      creates: "/home/pacs/{{pac}}/users/{{user}}/var/run/monit.id"
 
+  # TODO
