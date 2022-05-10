@@ -7,8 +7,10 @@
     ansible_remote_tmp: ~/.ansible/tmp
 
   tasks:
-  - name: Create user, domain and database
-    import_tasks: tasks/hs_basis.yml
+  # this needs to be called separately, in playbook-init.yml,
+  # so that the system administrators can enable the postgresql extensions in the database: citext, hstore, pg_stat_statements, pgcrypto
+  #- name: Create user, domain and database
+  #  import_tasks: tasks/hs_basis.yml
 
   #################################
   ## create directories

@@ -1,0 +1,23 @@
+loomio:
+  hosts:
+    {{pac}}-{{username}}:
+      ansible_ssh_host: {{pac}}.hostsharing.net
+      ansible_ssh_user: {{pac}}
+      pac: {{pac}}
+      domain: {{domain}}
+      user: {{username}}
+      password: {{password}}
+      redispassword: {{password2}}
+
+      redisport: {{port1}}
+      pumaport: {{port2}}
+      streamport: {{port3}}
+
+      # see https://nodejs.org/en/about/releases/
+      noderelease: 14
+      # see https://nodejs.org/download/release/latest-v14.x/
+      nodeversion: v14.19.1
+      # see https://www.ruby-lang.org/en/downloads/releases/
+      rubyversion: 2.7.5
+      # see https://github.com/loomio/loomio/blob/stable/lib/version.rb
+      loomio_branch: stable
